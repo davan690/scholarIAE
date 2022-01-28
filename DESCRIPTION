@@ -8,7 +8,8 @@ Description: Using tidydata and scholar package to visualise our departmental pu
 Imports:
     tidyverse,
     scholar,
-    here
+    here, 
+    stringr
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
