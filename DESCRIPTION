@@ -5,6 +5,10 @@ Version: 0.1.0
 Author: Anthony Davidson
 Maintainer: Anthony Davidson <anthony.davidson@canberra.edu.au>
 Description: Using tidydata and scholar package to visualise our departmental publication record.
-License: MIT
+Imports:
+    tidyverse,
+    scholar,
+    here
+License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
