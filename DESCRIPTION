@@ -1,0 +1,10 @@
+Package: scholarIAE
+Type: Package
+Title: Visualising publication records for Institutes
+Version: 0.1.0
+Author: Anthony Davidson
+Maintainer: Anthony Davidson <anthony.davidson@canberra.edu.au>
+Description: Using tidydata and scholar package to visualise our departmental publication record.
+License: MIT
+Encoding: UTF-8
+LazyData: true
