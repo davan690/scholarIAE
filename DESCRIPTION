@@ -9,11 +9,10 @@ Imports:
     tidyverse,
     scholar,
     here, 
-    stringr
+    stringr,
+    testthat (>= 3.0.0)
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
-Suggests: 
-    testthat (>= 3.0.0)
 RoxygenNote: 7.1.2
 Roxygen: list(markdown=TRUE)
