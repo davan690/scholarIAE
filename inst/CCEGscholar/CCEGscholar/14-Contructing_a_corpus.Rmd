@@ -1,0 +1,24 @@
+# Constructing a corpus
+
+Think about what you need: does it need to be representative? Are you interested in news as historical source, or are you interested in it from a generic or stylistic point of view? Are you using the news data to say something quantitative and statistical or is it more analytical?
+
+Find out what you can access, first of all. You'll need to work from practicalities rather than ideals. Do you have the time, support and money to request a large dataset of newspapers from Gale, and if you get it, will you have the expertise to use it?
+
+Find a group of titles you're interested in. There's no such thing as 'everything'. Targeted work might work best. 
+
+Do some work with a sample first of all
+
+Probably the most important - make sure, if it's relevant for your project, that you've thought about how statistically representative the corpus is, at the very least. For example, if you've 
+
+Have some way of working back to the image
+
+Do you want everything in a short time? Or a sample over a long period? 
+
+Can you narraw down your searches beforehand.
+
+Figure out what's available, and what you can sensibly use.
+
+R goes a bit crazy with anything over a couple of GB, even with lots of RAM (the computer's working memory). Some techniques here are unfeasible without lots of resources
+
+Don't forget the author - remember these were written by people, should be queried and interrogated like any source. Think about why something was written, for whom.
+

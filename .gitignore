@@ -62,4 +62,5 @@ po/*~
 #^data-raw$          # Code used to create data included in the package
 #^pkgdown$           # Resources used for the package website
 #^_pkgdown\.yml$     # Configuration info for the package website
-#^\.github$          # Contributing guidelines, CoC, issue templates, etc.
+#
+^\.github$          # Contributing guidelines, CoC, issue templates, etc.

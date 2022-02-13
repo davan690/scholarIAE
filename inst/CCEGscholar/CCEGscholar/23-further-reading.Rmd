@@ -1,0 +1,17 @@
+# Further reading
+
+For now this is just a list of useful stuff:
+
+https://scottbot.net/teaching-yourself-to-code-in-dh/
+
+http://dh-r.lincolnmullen.com
+
+https://bookdown.org/robinlovelace/geocompr/
+
+https://bookdown.org/yihui/blogdown/
+
+References to all the R cheat sheets
+
+https://www.tidytextmining.com
+
+https://r4ds.had.co.nz

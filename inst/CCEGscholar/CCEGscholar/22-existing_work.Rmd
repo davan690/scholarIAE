@@ -1,0 +1,15 @@
+# Existing work
+
+Make a list of tutorials, research projects etc. 
+
+Things/people to reference:
+
+Laurel Brake, Jim Mussell, other HMD advisory board people, Joad Raymond (don't forget about News networks)
+
+Bob Nicholson, Melodee Beals, Ryan Cordell
+
+Bloggers like Bruno Rodrigues
+
+The BL Labs stuff on github
+
+Other code repositories would be good.

@@ -8,12 +8,12 @@ library(scholar)
 library(here)
 
 ##read latest general data
-datIAEgeneral <- read_rds(here::here("data/datIAEgeneral_newjan2022.RDS"))
-datIAEtitles <- read_rds(here::here("data/datIAEtitles_newjan2022.RDS"))
+datIAEgeneral <- read_rds(here::here("inst/extdata/datIAEgeneral_newjan2022.RDS"))
+datIAEtitles <- read_rds(here::here("inst/extdata/datIAEtitles_newjan2022.RDS"))
 
 #check for updates
-datIAEgeneralPAST <- read_rds(here::here("data/datIAEgeneral_new.RDS"))
-datIAEtitlesPAST <- read_rds(here::here("data/datIAEtitles_new.RDS"))
+datIAEgeneralPAST <- read_rds(here::here("inst/extdata/datIAEgeneral_new.RDS"))
+datIAEtitlesPAST <- read_rds(here::here("inst/extdata/datIAEtitles_new.RDS"))
 
 
 #compare changes
@@ -31,18 +31,19 @@ datNew <- datIAEtitles %>%
 # glimpse(datNew)
 # head(datNew)
 
-ggplot(datNew, aes(x = year)) +
+p1 <- ggplot(datNew, aes(x = year)) +
   geom_histogram(stat = "count")
 
 # datNew$year
 
-ggplot(datNew, aes(x = year, y = cites)) +
+p2 <- ggplot(datNew, aes(x = year, y = cites)) +
   geom_point()
 
 ## One random one..
 datNew2 <- datIAEtitles %>%
   select(cid, year, cites, author, title) %>%
-  filter(year >=2019)
+  filter(year >=2019) 
+  
 
 # glimpse(datNew2)
 ### Add ones that we have shared in the future....

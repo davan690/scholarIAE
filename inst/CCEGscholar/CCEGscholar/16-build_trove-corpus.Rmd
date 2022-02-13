@@ -1,0 +1,282 @@
+# Constructing a corpus from Trove's API
+
+## Intro
+
+Believe it or not, there are other collections and newspapers datasets in addition to the British Library. 
+
+Trove, the National Library of Australia's content platform, is one such collection. 
+
+You can access it through here, but it also has an API. An API stands for Application Programming Interface. It's basically a set of instructions and commands which, when shared, allow programs to interface with a service or set of data. 
+
+You use the Trove API by building URL queries. If you use the accepted format and vocabulary of the API, these URLs will retrieve information you've asked for. The URL can be sent to the server to retrieve the information in lots of different ways.
+
+You can build a URL query and put it in your browser URL bar, and instead of retrieving a website, your browser will retrieve the results of the query. For example, you can ask Trove for all the newspaper articles with a certain search term, and it will return a file, in your browser, of all the relevant results. 
+
+Another way to use the API is to use a programming language to contruct, retrieve and store the results of the queries. R will do this pretty well, but others have used other languages to do this, in more sophisticated ways. This is particularly useful because you can do clever programming things like loops to retrieve lots of relevant information. For the purposes of this text, this is useful because we can retrieve large datasets of newspaper articles, but it can (and is) also used by web applications in a more interactive way. 
+
+This guide will show you how to contruct a dataset of articles with the same format as the sample articles dataframe we made with Heritage Made Digital newspapers.(reference the relevant chapter). You can then use this to do the same kind of analysis done on that dataset. 
+
+The first thing you'll need is an API key - a personal key which you need to send along with each query to assure Trove you're not doing anything dodgy with the data you're retrieving.
+
+For more information on Trove, you should definitely take a look at Tim Sheratt's work. 
+
+http://timsherratt.org/digital-heritage-handbook/docs/trove-newspaper-harvester/
+
+## Understanding the API format
+
+All the information about the API is here: https://help.nla.gov.au/trove/building-with-trove/api-version-2-technical-guide
+
+You interact with the API by contructing a URL query and then send it to the server in some way. An API URL query looks like this: https://api.trove.nla.gov.au/v2/result?key=<INSERT KEY>&zone=<ZONE NAME>&q=<YOUR SEARCH TERMS> 
+
+To break it down:
+
+```https://api.trove.nla.gov.au/v2/result?``` is the API server. This part is always first. If they update the server, you would need to update this bit in all your code.
+
+```key=<INSERT KEY>``` You need to put the API key, which you've signed up for, in here, instead of <INSERT KEY>
+
+```&``` between each of the instructions, you need to put an ```&``` so the API knows it's a separate thing and not just part of the last query.
+
+```zone=<ZONE NAME>``` You need to put a zone name in instead of the <ZONE NAME>. The zone is the section of Trove you want to search. In this case, it's always 'newspaper'. 
+
+```&``` another one of these connectors
+
+```q=<YOUR SEARCH TERMS>``` after ```q=``` you put whatever you're searching for. Note that these queries need special characters in place of space, otherwise you'll get an error. You replace whitespace with ```%20```. So ```limerick city``` as a search term needs to become ```limerick%20city```. If you do it without the spaces in your browser, it usually fills them in automatically, but R won't do that for you.
+
+Ultimately, you get the same results as you would if you contructed a query through Trove's website, but here you can save them as objects, and get lots of results all at once. 
+
+### Load relevant libraries.
+
+You'll need a couple of new libraries, *httr* and *jsonlite*, as well as the usual tidyverse. *httr* allows you to interact with URL queries, and *jsonlite* will read the JSON format file which is retrieved by the query. 
+
+
+```{r}
+library(httr)
+library(jsonlite)
+library(tidyverse)
+```
+
+The first thing to do is construct a URL query. A programming language allows you to set bits of text as variables, which is very useful. So you can create some variables for the er... variable parts of the query, and use a function called ```paste()``` (actually ```paste0``` which does the same thing except pastes without any space between each part) ```paste0()``` takes bits of text and makes them one piece of text. A bit of text can be a variable, which means you can paste the set bits of the query with the variable bits. 
+
+So if only your search term changed, you would set its variable like this:
+
+```{r}
+search_term = 'limerick&20city'
+```
+
+Then you can build a search term by pasting it to the rest of the query. ```paste0()``` pastes each part separated by a comma.
+
+```{r}
+full_query = paste0("my_complicated_api_query=", search_term)
+full_query
+```
+
+Now if you want to update your whole api query, you just change your search term variable:
+
+```{r}
+search_term = 'limerick&20county'
+```
+
+And run the same ```paste0()``` command:
+
+```{r}
+full_query = paste0("my_complicated_api_query=", search_term)
+full_query
+```
+
+So by using a programming language, you can quite easily build and change API queries, which can then be sent to the server to retrieve results. 
+
+Here's what we'll use:
+
+```{r}
+key = 'rtolalkm39qmnj8l' #get your own key and put it here
+zone = 'newspaper' # The zone to search
+query = "limerick+city" # the query we'll search for
+encoding = 'json' # the format of the results
+results = '100' #how many results per query. 100 is the maximum
+decade = '185' # You can specify some additional parameters, such as year or decade. These are optional
+```
+
+Next contruct the query, using paste0() to paste these variables to the fixed bits of the query:
+
+```{r}
+our_query = paste0('https://api.trove.nla.gov.au/v2/result?key=',
+               key,
+               '&zone=',
+               zone,
+               '&q=',
+               query,
+               '&encoding='
+               ,encoding, '&n=',
+               results,
+               '&l-decade=',
+               decade)
+
+our_query
+```
+
+Now you've got a single string of characters which can be read by the API. To fetch the results of the query, use a function from the *httr* package called ```GET()```.
+
+
+```{r}
+our_result = GET(paste0('https://api.trove.nla.gov.au/v2/result?key=',
+               key,
+               '&zone=',
+               zone,
+               '&q=',
+               query,
+               '&encoding='
+               ,encoding, '&n=',
+               results,
+               '&l-decade=',
+               decade))
+
+our_result
+```
+
+The result is a bit complicated. It's a list, within which are more lists, dataframes, characters and so forth. It's every piece of information created and retrieved by the query, including the timestamp, language and so forth. Using R we can retrieve just the parts we're interested in. 
+
+First create a new variable containing just the content part of the result.
+
+```{r}
+b = our_result$content
+  
+glimpse(b)
+```
+
+It's a raw format, which needs to be converted to characters, using the base R command ```rawToChar()```
+
+```{r}
+b = b %>% rawToChar() 
+glimpse(b)
+```
+Now, it's one long character string, which is actually a JSON encoded file. Using *jsonlite* we can read this into R 
+
+```{r}
+b = b %>% fromJSON()
+
+```
+
+The JSON is another complicated list :rolleyes
+
+The bit we want is here:
+
+```{r}
+
+b = b$response$zone$records$article
+```
+
+There's _another_ list in here (it's like Russian dolls). We can access the first part with ```[[1]]```
+
+```{r}
+b[[1]]
+```
+
+Hurray, that looks like a normal dataframe!
+
+Next turn the dataframe into a slightly more useable format using ```as_tibble()``` and select just the columns you're interested in. 
+
+Note that each cell in the title column is actually a dataframe of 1 row and two columns! Double rolleyes! We can sort that later.
+
+```{r}
+b = b[[1]] %>%
+  as_tibble(.name_repair = 'universal') %>% 
+  select(heading, title, date, page, snippet)
+```
+
+This is all very well to get one query, but to make a large dataset you need more results, and the maximum in one query is 100.
+
+To get more, Trove has devised a system. Each result contains a code called 'startKey'. If this code is entered into the API query, it will know that it should get the next page of results. If you do this in a loop, getting the new startKey each time, you can download large numbers of results. 
+
+That's what the following function does. Explaining how a function is created is for another chapter, but it's important to know that you can give a function a set of arguments. Here I've set them to the variables for the API query, just like the ones we declared above. When you run the function, you can change these values to whatever you like, or you can leave as-is and if there's a default, as there is in this case, it will use the default value.
+
+This function is called ```get_trove_articles()```
+
+```{r}
+get_trove_articles = function(key = 'rtolalkm39qmnj8l', zone = 'newspaper',query = 'war',encoding = 'json', totalresults = 1000, decade = '184'){
+  
+  startKey = '*'
+  listofdfs <- list()
+  
+  resultsamount = totalresults/100
+  
+  resultsforcall = as.character(resultsamount)
+  for(i in 1:resultsamount) {
+  
+  a = GET(paste0('https://api.trove.nla.gov.au/v2/result?key=',
+               key,
+               '&zone=',
+               zone,
+               '&q=',
+               query,
+               '&encoding='
+               ,encoding, '&n=100',
+               '&l-decade=',
+               decade,
+               '&include=articletext&s=',
+               startKey,'&bulkHarvest=TRUE'))
+
+b = rawToChar(a$content) %>% fromJSON()
+
+c = b$response$zone$records$article
+
+c[[1]]$title = c[[1]]$title$value
+
+startKey = b$response$zone$records$nextStart
+
+df = c[[1]] %>% as_tibble() %>% select(heading, title, date, page, snippet, articleText) %>% mutate(articleText = str_replace_all(articleText, "<[^>]+>", ""))
+
+listofdfs[[i]] <- df
+}
+return(do.call(rbind, listofdfs))
+}
+```
+
+We can use it to get large numbers of results, and easily change the search queries. By default it will return 1000 records. It can only retrieve records in multiples of 100 (a shortcoming of the function, not the API)
+
+For example:
+
+```{r}
+articles_about_limerick = get_trove_articles(query = 'limerick')
+```
+
+100 articles about Cork:
+
+```{r}
+articles_about_cork = get_trove_articles(query = 'cork', totalresults = 100)
+articles_about_cork
+```
+
+100 articles about London, from the 1890s:
+
+```{r}
+articles_about_london = get_trove_articles(query = 'london', totalresults = 100, decade = '190')
+articles_about_london
+```
+
+The result is a dataframe with the text (and information about date and title) which can be analysed using the tidytext package, or any of the other techniques in this book.
+
+For example
+
+```{r}
+library(tidytext)
+data('stop_words')
+```
+
+The most common words in the articles about London, minus 'stop words':
+
+```{r}
+articles_about_cork %>% 
+  unnest_tokens(word, articleText) %>% 
+  anti_join(stop_words) %>% 
+  group_by(word) %>% 
+  tally() %>% 
+  ungroup() %>% 
+  top_n(20) %>%
+  ggplot() + 
+  geom_col(aes(x = reorder(word,n), y =n)) + 
+  coord_flip()
+```
+
+
+
+

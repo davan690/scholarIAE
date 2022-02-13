@@ -8,11 +8,17 @@ Description: Using tidydata and scholar package to visualise our departmental pu
 Imports:
     tidyverse,
     scholar,
-    here, 
+    here,
     stringr,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    flexdashboard,
+    magrittr,
+    readr,
+    usethis
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.2
 Roxygen: list(markdown=TRUE)
+Depends: 
+    R (>= 2.10)

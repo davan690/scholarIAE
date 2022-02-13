@@ -1,0 +1,13 @@
+# Accessing newspaper data through the British Library
+
+## What is available?
+
+Can you make charts?
+
+## Applying for support from BL Labs
+
+## Using JupyterHub in the reading rooms
+
+## Taking the data away with you
+
+## Next chapter leads on to OCR formats. 

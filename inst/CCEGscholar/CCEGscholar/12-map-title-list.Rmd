@@ -1,0 +1,289 @@
+# Geocode and map newspaper titles
+R is also really good for creating maps, both for visualisations and for spatial analysis. 
+
+
+
+## Points
+Another thing we can do is create a map of all the titles. For this we'll need three things
+
+* A background map of the UK and Ireland
+
+* A count of the total titles for each city
+
+* A list of coordinates for all the cities. This last one is a little trickier than the other two, as I'll explain. Without some manually editing we might end up with some slightly dodgy results. But let's just see where we end up.
+
+### Drawing a background map. `
+
+The plotting library *ggplot2*, which is part of the tidyverse package, contains a function called ``map_data()``` which turns data from the *maps* library. This can then be used to draw a map. First you'll need to install the maps package using ```install.packages()```.
+
+Next load *ggplot2* and the *maps* library
+
+```{r}
+library(ggplot2)
+library(maps)
+```
+
+
+First we assign a name to the dataframe we'll create with a function called ```map_data()```. ```map_data()``` takes an argument with the name of the map you want to load, in inverted commas. Some of the choices are 'world', 'usa', 'france', 'italy'. We'll use the 'world' map. 
+
+```{r}
+worldmap = map_data('world')
+```
+
+Take a look at the dataframe we've created:
+
+```{r}
+head(worldmap, 20)
+```
+
+It's a big table with about 100,000 rows. Each row has a latitude and longitude, and a group. Each region and sub-region in the dataframe has its own group number. We'll use a function ```geom_polygon``` which tells ggplot to draw a polygon (a bunch of connected lines) for each group, and display it.
+
+With the ```aes()```, x tells ggplot2 the longitude of each point, y the latitude, and group makes sure the polygons are grouped together correctly. 
+
+```{r}
+ggplot() + geom_polygon(data = worldmap, aes(x = long, y = lat, group = group))
+```
+
+Right, it needs a _bit_ of tweaking. First, we only want to plot points in the UK. There's obviously way too much map for this, so the first thing we should do is restrict it to a rectangle which includes those two countries. 
+
+We can do that with ```coord_fixed()```. ```coord_fixed()``` is used to fix the aspect ratio of a coordinate system, but can be used to specify a bounding box by using two of its arguments: ```xlim=``` and ```ylim=```. These each take a vector (a series of numbers) with two items A vector is created using ```c()```. Each item in the vector specifies the limits for that axis. So ```xlim = c(0,10)``` means _restrict the x-axis to 0 and 10_. The axes correspond to the lines of longitude (x) and latitude (y). We'll restrict the x-axis to c(-10, 4) and the y-axis to c(50.3, 60) which should just about cover the UK and Ireland. 
+
+
+```{r}
+ggplot() + geom_polygon(data = worldmap, aes(x = long, y = lat, group = group)) + 
+  coord_fixed(xlim = c(-10,3), ylim = c(50.3, 59))
+```
+
+
+You can also change the ratio of the coordinates using ```coord_fixed()```. The default is 1, but by specifying a different one with the argument ```ratio =```, that can be changed. Using ```ratio = 1.3``` results in a less squashed-looking map. 
+
+
+```{r}
+ggplot() + 
+  geom_polygon(data = worldmap, aes(x = long, y = lat, group = group)) + 
+  coord_fixed(ratio = 1.3, xlim = c(-10,3), ylim = c(50, 59))
+```
+
+A couple more things, which I'll run through quickly.
+
+We can specify fill and line colors usings ```fill = ``` and ```color = ``` inside ```geom_polygon()``` but _outside_ ```aes()```. 
+
+```{r}
+ggplot() + geom_polygon(data = worldmap, aes(x = long, y = lat, group = group), fill = 'gray90', color = 'black') + 
+  coord_fixed(ratio = 1.3, xlim = c(-10,3), ylim = c(50, 59))
+```
+
+We probably don't need the grids or panels in the background. We can get rid of these with ```+ theme_void()```.
+
+
+```{r}
+ggplot() + geom_polygon(data = worldmap, aes(x = long, y = lat, group = group), fill = 'gray90', color = 'black') + 
+  coord_fixed(ratio = 1.3, xlim = c(-10,3), ylim = c(50, 59)) + 
+  theme_void()
+```
+
+## Add some points
+
+### Get a count of the total titles for each city
+
+This next bit uses some of the functions demonstrated in the introduction to R and the tidyverse, namely ```group_by()``` and ```tally()```. 
+
+First load the rest of the tidyverse packages. 
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+Next, load the title list, which can be dowloaded here: 
+
+```{r message=FALSE, warning=FALSE}
+title_list = read_csv('BritishAndIrishNewspapersTitleList_20191118.csv')
+```
+
+We can quite easily make a new data frame, which will just include each location and the total number of instances in the dataset.
+
+
+```{r}
+location_counts = title_list %>% 
+  group_by(country_of_publication, general_area_of_coverage, coverage_city) %>% 
+  tally()
+```
+
+Arranging these in descending order of their count shows how many of each we have:
+
+```{r}
+location_counts %>% 
+  arrange(desc(n))
+```
+
+### Get a list of points. 
+
+Well, we've cheated and made this one already, with lots of manual work. 
+
+We'll load a dataset containing geocorrected points. 
+
+```{r message=FALSE, warning=FALSE}
+library(snakecase)
+geocorrected = read_csv('data/geocorrected.csv')
+colnames(geocorrected) = to_snake_case(colnames(geocorrected))
+head(geocorrected, 10)
+```
+
+This is a dataframe with a set of longitude and latitude points (they come from Wikipedia, which is why they are prefixed with _wiki_) for every combination of city/county/country in the list of titles. These can be joined to the full title list.  
+
+It needs a little bit of pre-processing. The longitude and latitude colums 
+```{r}
+geocorrected = geocorrected %>%
+  mutate(wikilat = as.numeric(wikilat)) %>% 
+  mutate(wikilon = as.numeric(wikilon))
+```
+
+Last, change the NA values to the same format as the ones in the title list. 
+```{r}
+geocorrected = geocorrected %>% 
+  mutate(country_of_publication = replace(country_of_publication, country_of_publication == 'na', NA)) %>% mutate(general_area_of_coverage = replace(general_area_of_coverage, general_area_of_coverage == 'na', NA)) %>% 
+  mutate(coverage_city = replace(coverage_city, coverage_city == 'na', NA))
+```
+
+
+Using ```left_join()``` we will merge these dataframes, joining up each set of location information to its coordinates and standardised name. ```left_join()``` is a _very_ common command in data analysis. It merges two sets of data by matching a value known as a key. 
+
+Here the key is three values - city, county and country, and it matches up the two sets of data by 'joining' two rows together, if they share all three of these values. Store this is a new variable called ```lc_with_geo```.
+
+```{r}
+lc_with_geo = location_counts %>% 
+  left_join(geocorrected, by = c('coverage_city' ,'general_area_of_coverage', 'country_of_publication'))
+```
+
+If you look at this new dataset, you'll see that now the counts of locations have merged with the geocorrected data. Now we have an amount and coordinates for each place. 
+
+```{r}
+head(lc_with_geo, 10)
+```
+
+
+Right, now we're going to use ```group_by()``` and ```tally()``` again, this time on the the *wikititle*, *wikilat* and *wikilon* columns. This is because the wikititle is a standardised title, which means it will group together cities properly, rather than giving a different row for slightly different combinations of the three geographic information columns. 
+
+```{r}
+lc_with_geo_counts = lc_with_geo %>% 
+  group_by(wikititle, wikilat, wikilon) %>% 
+  tally(n)
+```
+
+Now we've got a dataframe with counts of total newspapers, for each standardised wikipedia title in the dataset.
+
+```{r}
+head(lc_with_geo_counts,20)
+```
+
+
+OK, lc_with_geo_counts is what we want to plot. This contains the city title, coordinates and counts for all the relevant places in our dataset. But first we need the map we created earlier. 
+
+```{r}
+ggplot() + 
+  geom_polygon(data = worldmap, aes(x = long, y = lat, group = group), fill = 'gray90', color = 'black') + 
+  coord_fixed(ratio = 1.3, xlim = c(-10,3), ylim = c(50, 59)) + 
+  theme_void()
+```
+
+Now we will plot the cities using ```geom_point()``` We'll specify the ```lc_with_geo_counts``` as the argument to ```data = ``` within ```geom_point()```. The x axis position of each point is the longitude, and the y axis the latitude. We'll also use the argument ```size = n``` within the ```aes()```, to tell ggplot2 to size the points by the column n, which contains the counts for each of our locations, and the argument ```alpha = .7``` outside the ```aes()```, to make the points more transparent and slightly easier to read overlapping ones. 
+
+One last thing we'll add is ```+scale_size_area()```. This sizes the points using their radius rather than diameter, which is a more correct way of representing numbers using circles!
+
+```{r warning=FALSE}
+ggplot() + geom_polygon(data = worldmap, aes(x = long, y = lat, group = group), fill = 'gray90', color = 'black') + 
+  coord_fixed(ratio = 1.3, xlim = c(-10,3), ylim = c(50, 59)) + 
+  theme_void() + 
+  geom_point(data = lc_with_geo_counts, aes(x = as.numeric(wikilon), y = as.numeric(wikilat), size = n), alpha = .7) + 
+  scale_size_area()
+```
+
+
+## Choropleth map
+
+Link to the mapping with R book. Further reading about sf
+Another type of map is a choropleth. This is where the data is visualised by a certain polygon area rather than a point. Typically these represent areas like parishes, counties or countries. It's quite a bit more complicated than the map above. 
+
+### Which libraries are needed
+
+Load the following libraries. Install them first using ```install.packages()``` if necessary. These libraries allow one to manipulate spatial data using R.
+
+
+```{r message=FALSE, warning=FALSE}
+library(sf)
+library(rgdal)
+library(broom)
+library(rgeos)
+```
+
+
+### Download a shapefile
+
+Next you'll need the correct shapefile. 
+
+[From here](https://data.gov.uk/dataset/0fb911e4-ca3a-4553-9136-c4fb069546f9/ceremonial-county-boundaries-of-england)
+
+Extract it into your project folder.
+
+A shapefile is a special object with a couple of elements. It contains a dataset of polygons, like the map above, as well as some other things. First you need to turn the list of polygons into a dataframe, and then join it to a count of all the newspaper titles per county. 
+
+### Load the shapefile into R
+
+Using the function ```readOGR()``` from the rgdal package, we can load the shapefile into an object called ```england_shp```. ```readOGR()``` needs a dsn argument, which is the folder you've extracted into, and a layer, which is the name of the file in the folder, minus the extension. 
+
+So if your folder looks like this: 
+
+![](shapefile.png)
+
+The arguments are as follows:
+
+```{r}
+england_shp = st_read("data/english_ceremonial_counties/English Ceremonial Counties.shp")
+```
+
+
+Now make a simple count of the county field (general_area_of_coverage) using ```group_by()``` and ```tally()```. 
+
+```{r}
+county_totals = title_list %>% 
+  group_by(general_area_of_coverage) %>% 
+  tally()
+```
+
+Join this to the shapefile data, specifying that the 'id' field in the shape data should match the 'general_area_of_coverage' field in the county_totals data. 
+
+```{r}
+england_shp = england_shp %>% left_join(county_totals, 
+                           by = c('NAME' = 'general_area_of_coverage'))
+```
+
+Now shp_tidy contains a new column, n, which contains the count of titles, for that county. 
+
+```{r}
+head(england_shp, 20)
+```
+
+
+Use ggplot and ```geom_polygon()``` to draw the dataframe of polygons.
+
+```{r}
+ggplot() + 
+  geom_sf(data = england_shp, color = 'black', aes(fill = n))
+```
+
+It's black, so you need to fill the polygons with colour. This is done by passing the n column to the *fill* aesthetic, inside the aes() within the ```geom_polygon()```
+
+```{r}
+ggplot() + 
+  geom_sf(data = england_shp,fill = 'gray90', color = 'black') + 
+  theme_void() + 
+  coord_sf(1.3)
+```
+
+Unfortunately, the list of counties in the title list doesn't _exactly_ match those in the shapefile. This is because county names in the UK are a complicated business and they have revised over time. There's no easy solution to this, because new counties don't always match the borders of the changed county, and mergers might not always just join two old counties together. 
+
+This gets a list of all the counties in the title list _not_ present in the shapefile, arranged in descending order of number of titles. 
+
+### Change some of the names to fit the shapefile
+
+### Count the general area of coverage field
